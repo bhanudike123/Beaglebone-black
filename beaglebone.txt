@@ -1,0 +1,94 @@
+Downloading latest ARM Cross Compiler using below link
+
+http://releases.linaro.org/components/toolchain/binaries/5.4-2017.05/arm-linux-gnueabihf/ 
+
+untar the file using 
+
+$ tar xzf file name
+
+sudo mv "downloaded linaro cross compiler vesion"/ gcc-arm-linux
+export PATH=$PATH:/opt/gcc-arm-linux/bin
+
+For checkin gcc version 
+$ arm-linux-gnueabihf-gcc --version
+
+Above command will dislay 
+
+arm-linux-gnueabihf-gcc (Linaro GCC 6.2-2016.11) 6.2.1 20161016
+Copyright (C) 2016 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+If you got a (linaro GCC 4.xxx version )then update your gcc version to 6.2
+
+
+DOwnloading U-boot 
+
+for below link Download  latest Version of U-boot
+ftp://ftp.denx.de/pub/u-boot/
+
+
+Untar the file using 
+$ tar xzf "file name"
+
+Building  uboot
+ 
+$ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- am335x_boneblack_defconfig
+$ make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
+
+
+Building Kernel 
+
+$git clone git://github.com/beagleboard/linux.git
+
+After cloning the linux repository you will find the linux directory.
+Change directory to linux and checkout linux kernel 4.1 version.
+
+$ cd linux
+$ git checkout 4.1
+
+Compiling the kernel with beaglebone default configuration
+
+$ sudo make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- bb.org_defconfig
+$ sudo make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- uImage dtbs LOADADDR=0x80008000 -j
+
+Building of kernel is completed then flash in to micro sd card
+
+Prepare microSD card using GParted
+
+Right click on the partition and unmount all the partitions. And delete all the partions. Once done, right click and make new partition.First is the of size 100 MB.A window will appear, enter 100 in New size (MiB) and choose file system as fat32. And name label as BOOT as shown in the below image.
+
+Now again right click on the un allocated space and make new partition. Enter 1000 in New size(MiB) and choose file system as ext4. And label it as rootfs as shown in the image.
+
+Next step is to mark the first partition as boot.
+
+You need to copy MLO, u-boot.img from lfs/u-boot directory, am335x-boneblack.dtb from  lfs/linux/arch/arm/boot/dts directory, uImage from lfs/linux/arch/arm/boot to BOOT partition of the microSD card.
+
+And make a file called uEnv.txt in BOOT partition and copy  below code.
+
+loadaddr=0x80008000
+fdtaddr=0x88000000
+arg=setenv bootargs console="write your Port number",115200n8 root=/dev/mmcblk0p2 rw rootfstype=ext4 rootwait
+image=load mmc 0:1 ${loadaddr} uImage ;
+fdt=load mmc 0:1 ${fdtaddr} am335x-bonegreen.dtb ;
+uenvcmd=run arg;load image;load fdt;bootm ${loadaddr} - ${fdtaddr};
+
+Root File System (RFS)
+
+$ sudo tar -xvf rootfs.tar.xz -C /media/bhanu/RFS/
+$ cd /media/bhanu/RFS/rootfs/
+$ sudo mv ./* ../
+$ cd ../
+$ sudo rmdir rootfs
+
+The above command will uncompress the tar file and will place it in the RFS partition of SD card. Just replace “bhanu” with your username in the above command.
+
+Install Kernel Modules
+
+We need modules for proper working of the kernel. So, install the kernel modules by the following command.
+
+$ sudo make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j4 modules
+$ sudo make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- INSTALL_MOD_PATH=/media/mani/RFS/ modules_install
+
+That’s it. After completing the above steps, remove the SD card and place it in your BeagleBone. Connect the Bone to your PC via USB to serial converter and open the serial console using minicom in PC. (Set baud rate as 115200). After ensuring all things are correct, power on your BBB while holding the Boot switch (SW2). It will boot from your own custom kernel. Now you can cherish that you have created your own kernel image and deployed it in BeagleBone Black!!!
+
